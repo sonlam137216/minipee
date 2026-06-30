@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
@@ -20,6 +20,7 @@ describe("seller app", () => {
   });
 
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
     localStorage.clear();
   });
@@ -30,6 +31,12 @@ describe("seller app", () => {
     fetchMock
       .mockResolvedValueOnce(
         new Response(JSON.stringify({ seller, accessToken: "token-1" }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ products: [] }), {
           status: 200,
           headers: { "Content-Type": "application/json" }
         })

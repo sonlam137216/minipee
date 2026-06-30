@@ -6,3 +6,4 @@ backend/api
 
 *.log
 .env
+evidence/raw/

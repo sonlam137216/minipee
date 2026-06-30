@@ -24,6 +24,11 @@ func TestPostgresSellerRepositoryAndLogin(t *testing.T) {
 	repository := NewPostgresRepository(db)
 	service := NewService(repository, NewJWTManager("test-secret", time.Hour, fixedTime), fixedID("00000000-0000-4000-8000-000000000101"), fixedTime)
 	email := "seller-auth-" + time.Now().Format("150405.000000000") + "@example.com"
+	cleanup := func() {
+		_, _ = db.Exec(ctx, "DELETE FROM sellers WHERE id = $1 OR email = $2", "00000000-0000-4000-8000-000000000101", email)
+	}
+	cleanup()
+	t.Cleanup(cleanup)
 
 	result, err := service.Register(ctx, RegisterInput{Email: email, Password: "password123", DisplayName: "Seller"})
 	if err != nil {

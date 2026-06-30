@@ -28,6 +28,14 @@ Deferred:
 - npm.
 - Docker and Docker Compose.
 
+## Development Guides
+
+- [Agent guide](AGENTS.md): durable rules for scoped, verifiable agent-assisted work.
+- [Architecture](docs/architecture.md): current backend, frontend, data ownership and auth boundaries.
+- [Testing and validation](docs/testing.md): test types, database prerequisites and validation commands.
+- [Agent workflow](docs/agent-workflow.md): task lifecycle, evidence and completion-report expectations.
+- [Code review](docs/code-review.md): review checklist for repository changes.
+
 ## Environment Setup
 
 Copy the example environment file and set a real local secret:
@@ -101,7 +109,19 @@ make frontend-test
 make validate
 ```
 
-Validation runs Go formatting, frontend type checks, backend tests, frontend tests and builds for both applications.
+Validation runs Go formatting checks, frontend type checks, backend tests, frontend tests and builds for both applications. It must not modify tracked source files or database data, but it may generate ignored build artifacts such as `frontend/dist`.
+
+Full validation requires frontend dependencies and a running, migrated PostgreSQL database:
+
+```bash
+make frontend-install
+make dev-db
+make wait-db
+make reset-dev-db
+make validate
+```
+
+`make reset-dev-db` is destructive for the local `marketplace_dev` database. Use `make format` when you intentionally want to rewrite Go formatting.
 
 ## API Endpoints
 

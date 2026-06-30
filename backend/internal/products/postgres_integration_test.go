@@ -22,8 +22,12 @@ func TestPostgresProductRepository(t *testing.T) {
 
 	sellerID := "00000000-0000-4000-8000-000000000201"
 	otherSellerID := "00000000-0000-4000-8000-000000000202"
-	_, _ = db.Exec(ctx, "DELETE FROM products WHERE seller_id IN ($1, $2)", sellerID, otherSellerID)
-	_, _ = db.Exec(ctx, "DELETE FROM sellers WHERE id IN ($1, $2)", sellerID, otherSellerID)
+	cleanup := func() {
+		_, _ = db.Exec(ctx, "DELETE FROM products WHERE seller_id IN ($1, $2)", sellerID, otherSellerID)
+		_, _ = db.Exec(ctx, "DELETE FROM sellers WHERE id IN ($1, $2)", sellerID, otherSellerID)
+	}
+	cleanup()
+	t.Cleanup(cleanup)
 	_, err = db.Exec(ctx, `
 		INSERT INTO sellers (id, email, password_hash, display_name, created_at, updated_at)
 		VALUES ($1, 'product-owner@example.com', 'hash', 'Owner', now(), now()),
