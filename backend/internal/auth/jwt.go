@@ -43,7 +43,7 @@ func (m *JWTManager) Verify(rawToken string) (Claims, error) {
 			return nil, ErrInvalidAccessToken
 		}
 		return m.secret, nil
-	}, jwt.WithExpirationRequired())
+	}, jwt.WithExpirationRequired(), jwt.WithTimeFunc(m.now))
 	if err != nil {
 		return Claims{}, ErrInvalidAccessToken
 	}
