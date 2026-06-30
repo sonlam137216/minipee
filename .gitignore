@@ -1,0 +1,8 @@
+frontend/dist/
+frontend/node_modules/
+frontend/tsconfig.tsbuildinfo
+backend/tmp/
+backend/api
+
+*.log
+.env
