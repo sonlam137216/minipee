@@ -2,9 +2,9 @@
 
 ## Goal
 
-Build a very small marketplace MVP that lets sellers publish products and lets buyers discover those published products.
+Build a very small marketplace MVP in controlled phases. The current implemented foundation supports seller authentication and seller-owned draft product management only.
 
-## In Scope
+## Implemented Now
 
 ### Seller Account
 
@@ -16,12 +16,12 @@ Build a very small marketplace MVP that lets sellers publish products and lets b
 - Sellers can create draft products.
 - Sellers can list their own products.
 - Sellers can view details for their own products.
-- Sellers can publish a draft product.
 
-### Buyer Product Discovery
+## Deferred Future Scope
 
-- Buyers can browse published products.
-- Buyers can view details for a published product.
+- Product publishing.
+- Buyer product discovery.
+- Buyer storefront.
 
 ## Out of Scope
 
@@ -35,7 +35,6 @@ Build a very small marketplace MVP that lets sellers publish products and lets b
 - Microservices
 - AI features
 
-## MVP Boundary
+## Current Boundary
 
-The MVP stops at product publishing and product discovery. It does not support checkout, fulfillment, post-purchase workflows, seller marketing tools, or complex platform architecture.
-
+The current repository stops at seller-owned draft product management. Product publishing, buyer discovery, checkout, fulfillment, post-purchase workflows, seller marketing tools, and complex platform architecture require explicit future task scope before implementation.
