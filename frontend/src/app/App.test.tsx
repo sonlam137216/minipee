@@ -60,6 +60,7 @@ describe("seller app", () => {
     expect(url).toBe("http://localhost:8080/api/v1/auth/login");
     expect(init?.method).toBe("POST");
     expect(init?.body).toBe('{"email":"seller@example.com","password":"password123"}');
+    expect(localStorage.getItem("marketplace.seller")).toBe(JSON.stringify(seller));
   });
 
   test("seller pages require authentication", async () => {
@@ -68,6 +69,110 @@ describe("seller app", () => {
     render(<App />);
 
     expect(await screen.findByRole("heading", { name: /seller login/i })).toBeInTheDocument();
+  });
+
+  test("malformed stored seller JSON is cleared and redirects to login", async () => {
+    const fetchMock = vi.mocked(fetch);
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    localStorage.setItem("marketplace.seller", "{malformed");
+    window.history.pushState({}, "", "/products");
+
+    expect(() => render(<App />)).not.toThrow();
+
+    expect(await screen.findByRole("heading", { name: /seller login/i })).toBeInTheDocument();
+    expect(localStorage.getItem("marketplace.accessToken")).toBeNull();
+    expect(localStorage.getItem("marketplace.seller")).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("stored auth without a token is cleared and redirects to login", async () => {
+    const fetchMock = vi.mocked(fetch);
+    localStorage.setItem("marketplace.seller", JSON.stringify(seller));
+    window.history.pushState({}, "", "/products");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /seller login/i })).toBeInTheDocument();
+    expect(localStorage.getItem("marketplace.accessToken")).toBeNull();
+    expect(localStorage.getItem("marketplace.seller")).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("stored auth without seller data is cleared and redirects to login", async () => {
+    const fetchMock = vi.mocked(fetch);
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    window.history.pushState({}, "", "/products");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /seller login/i })).toBeInTheDocument();
+    expect(localStorage.getItem("marketplace.accessToken")).toBeNull();
+    expect(localStorage.getItem("marketplace.seller")).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("stored auth with invalid seller shape is cleared and redirects to login", async () => {
+    const fetchMock = vi.mocked(fetch);
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    localStorage.setItem(
+      "marketplace.seller",
+      JSON.stringify({ email: "seller@example.com", displayName: "Seller", createdAt: "2026-06-30T00:00:00Z" })
+    );
+    window.history.pushState({}, "", "/products");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /seller login/i })).toBeInTheDocument();
+    expect(localStorage.getItem("marketplace.accessToken")).toBeNull();
+    expect(localStorage.getItem("marketplace.seller")).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("valid stored auth renders protected seller page and loads products", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ products: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    localStorage.setItem("marketplace.seller", JSON.stringify(seller));
+    window.history.pushState({}, "", "/products");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /your products/i })).toBeInTheDocument();
+    expect(await screen.findByText(/no products yet/i)).toBeInTheDocument();
+    expect(localStorage.getItem("marketplace.accessToken")).toBe("test-token");
+    expect(localStorage.getItem("marketplace.seller")).toBe(JSON.stringify(seller));
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://localhost:8080/api/v1/seller/products");
+    expect(init?.method).toBe("GET");
+    expect((init?.headers as Headers).get("Authorization")).toBe("Bearer test-token");
+  });
+
+  test("logout clears stored auth and returns to unauthenticated navigation", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ products: [] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    localStorage.setItem("marketplace.seller", JSON.stringify(seller));
+    window.history.pushState({}, "", "/products");
+
+    render(<App />);
+
+    await screen.findByRole("heading", { name: /your products/i });
+    await user.click(screen.getByRole("button", { name: /log out/i }));
+
+    expect(localStorage.getItem("marketplace.accessToken")).toBeNull();
+    expect(localStorage.getItem("marketplace.seller")).toBeNull();
+    expect(screen.queryByRole("button", { name: /log out/i })).not.toBeInTheDocument();
   });
 
   test("create product form validates product name before API request", async () => {

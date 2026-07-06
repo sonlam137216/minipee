@@ -14,12 +14,57 @@ const AuthContext = createContext<AuthState | null>(null);
 const tokenKey = "marketplace.accessToken";
 const sellerKey = "marketplace.seller";
 
+function clearStoredAuth() {
+  localStorage.removeItem(tokenKey);
+  localStorage.removeItem(sellerKey);
+}
+
+function isSeller(value: unknown): value is Seller {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.email === "string" &&
+    typeof candidate.displayName === "string" &&
+    typeof candidate.createdAt === "string" &&
+    typeof candidate.updatedAt === "string"
+  );
+}
+
+function readStoredAuth(): Pick<AuthState, "seller" | "token"> {
+  const storedToken = localStorage.getItem(tokenKey);
+  const storedSeller = localStorage.getItem(sellerKey);
+
+  if (storedToken === null && storedSeller === null) {
+    return { token: null, seller: null };
+  }
+
+  if (storedToken === null || storedToken.trim() === "" || storedSeller === null) {
+    clearStoredAuth();
+    return { token: null, seller: null };
+  }
+
+  try {
+    const parsedSeller: unknown = JSON.parse(storedSeller);
+    if (!isSeller(parsedSeller)) {
+      clearStoredAuth();
+      return { token: null, seller: null };
+    }
+
+    return { token: storedToken, seller: parsedSeller };
+  } catch {
+    clearStoredAuth();
+    return { token: null, seller: null };
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem(tokenKey));
-  const [seller, setSeller] = useState<Seller | null>(() => {
-    const stored = localStorage.getItem(sellerKey);
-    return stored === null ? null : (JSON.parse(stored) as Seller);
-  });
+  const [storedAuth] = useState(readStoredAuth);
+  const [token, setToken] = useState<string | null>(storedAuth.token);
+  const [seller, setSeller] = useState<Seller | null>(storedAuth.seller);
 
   function storeAuth(result: AuthResponse) {
     localStorage.setItem(tokenKey, result.accessToken);
@@ -35,8 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login: async (input) => storeAuth(await loginSeller(input)),
       register: async (input) => storeAuth(await registerSeller(input)),
       logout: () => {
-        localStorage.removeItem(tokenKey);
-        localStorage.removeItem(sellerKey);
+        clearStoredAuth();
         setToken(null);
         setSeller(null);
       }
