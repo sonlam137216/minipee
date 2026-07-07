@@ -6,12 +6,23 @@ export type Seller = {
   updatedAt: string;
 };
 
-export type Product = {
+export type ProductStatus = "draft" | "published";
+
+export type SellerProduct = {
   id: string;
   sellerId: string;
   name: string;
   description: string;
-  status: "draft";
+  status: ProductStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type PublicProduct = {
+  id: string;
+  name: string;
+  description: string;
+  status: ProductStatus;
   createdAt: string;
   updatedAt: string;
 };
@@ -22,7 +33,11 @@ export type AuthResponse = {
 };
 
 export type ProductListResponse = {
-  products: Product[];
+  products: SellerProduct[];
+};
+
+export type PublicProductListResponse = {
+  products: PublicProduct[];
 };
 
 type ApiErrorResponse = {
@@ -58,16 +73,28 @@ export async function loginSeller(input: { email: string; password: string }): P
   return request<AuthResponse>("/api/v1/auth/login", { method: "POST", body: input });
 }
 
-export async function createProduct(token: string, input: { name: string; description: string }): Promise<Product> {
-  return request<Product>("/api/v1/seller/products", { method: "POST", token, body: input });
+export async function createProduct(token: string, input: { name: string; description: string }): Promise<SellerProduct> {
+  return request<SellerProduct>("/api/v1/seller/products", { method: "POST", token, body: input });
 }
 
 export async function listProducts(token: string): Promise<ProductListResponse> {
   return request<ProductListResponse>("/api/v1/seller/products", { method: "GET", token });
 }
 
-export async function getProduct(token: string, productID: string): Promise<Product> {
-  return request<Product>(`/api/v1/seller/products/${encodeURIComponent(productID)}`, { method: "GET", token });
+export async function getProduct(token: string, productID: string): Promise<SellerProduct> {
+  return request<SellerProduct>(`/api/v1/seller/products/${encodeURIComponent(productID)}`, { method: "GET", token });
+}
+
+export async function publishProduct(token: string, productID: string): Promise<SellerProduct> {
+  return request<SellerProduct>(`/api/v1/seller/products/${encodeURIComponent(productID)}/publish`, { method: "POST", token });
+}
+
+export async function listPublicProducts(): Promise<PublicProductListResponse> {
+  return request<PublicProductListResponse>("/api/v1/products", { method: "GET" });
+}
+
+export async function getPublicProduct(productID: string): Promise<PublicProduct> {
+  return request<PublicProduct>(`/api/v1/products/${encodeURIComponent(productID)}`, { method: "GET" });
 }
 
 async function request<T>(

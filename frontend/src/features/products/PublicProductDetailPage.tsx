@@ -1,27 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import { useAuth } from "../auth/AuthContext";
-import { SellerProduct, getProduct, publishProduct } from "../../shared/api";
+import { PublicProduct, getPublicProduct } from "../../shared/api";
 
-export function ProductDetailPage() {
-  const auth = useAuth();
+export function PublicProductDetailPage() {
   const { productID } = useParams();
-  const [product, setProduct] = useState<SellerProduct | null>(null);
+  const [product, setProduct] = useState<PublicProduct | null>(null);
   const [loading, setLoading] = useState(true);
-  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
-      if (auth.token === null || productID === undefined) {
+      if (productID === undefined) {
         return;
       }
       setLoading(true);
       setError(null);
       try {
-        const response = await getProduct(auth.token, productID);
+        const response = await getPublicProduct(productID);
         if (active) {
           setProduct(response);
         }
@@ -39,28 +36,11 @@ export function ProductDetailPage() {
     return () => {
       active = false;
     };
-  }, [auth.token, productID]);
-
-  async function publish() {
-    if (auth.token === null || productID === undefined) {
-      setError("Authentication required");
-      return;
-    }
-    setPublishing(true);
-    setError(null);
-    try {
-      const response = await publishProduct(auth.token, productID);
-      setProduct(response);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to publish product");
-    } finally {
-      setPublishing(false);
-    }
-  }
+  }, [productID]);
 
   return (
     <section className="panel">
-      <Link to="/products">Back to products</Link>
+      <Link to="/catalog">Back to catalog</Link>
       {loading ? <p>Loading product...</p> : null}
       {error !== null ? <p role="alert">{error}</p> : null}
       {product !== null ? (
@@ -68,19 +48,14 @@ export function ProductDetailPage() {
           <p className="status">{product.status}</p>
           <h1>{product.name}</h1>
           <p>{product.description === "" ? "No description provided." : product.description}</p>
-          {product.status === "draft" ? (
-            <button type="button" onClick={publish} disabled={publishing}>
-              {publishing ? "Publishing..." : "Publish product"}
-            </button>
-          ) : null}
           <dl>
             <div>
               <dt>Product ID</dt>
               <dd>{product.id}</dd>
             </div>
             <div>
-              <dt>Created</dt>
-              <dd>{product.createdAt}</dd>
+              <dt>Published</dt>
+              <dd>{product.updatedAt}</dd>
             </div>
           </dl>
         </article>

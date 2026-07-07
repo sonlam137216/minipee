@@ -14,13 +14,16 @@ wait-db:
 
 migrate-up:
 	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000001_init.up.sql
+	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000002_publish_products.up.sql
 
 migrate-down:
+	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000002_publish_products.down.sql
 	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000001_init.down.sql
 
 reset-dev-db:
 	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000001_init.down.sql
 	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000001_init.up.sql
+	docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U marketplace -d marketplace_dev -f /dev/stdin < backend/migrations/000002_publish_products.up.sql
 
 format:
 	cd backend && gofmt -w .
@@ -29,7 +32,7 @@ backend-run:
 	set -a; [ -f .env ] && . ./.env; set +a; cd backend && go run ./cmd/api
 
 backend-test:
-	cd backend && GOCACHE=/private/tmp/marketplace-go-cache GOMODCACHE=/private/tmp/marketplace-go-mod TEST_DATABASE_URL="$(TEST_DATABASE_URL)" go test ./...
+	cd backend && GOCACHE=/private/tmp/marketplace-go-cache GOMODCACHE=/private/tmp/marketplace-go-path/pkg/mod TEST_DATABASE_URL="$(TEST_DATABASE_URL)" go test ./...
 
 frontend-install:
 	cd frontend && npm install
@@ -51,7 +54,7 @@ test: backend-test frontend-test
 
 build:
 	cd frontend && npm run build
-	cd backend && GOCACHE=/private/tmp/marketplace-go-cache GOMODCACHE=/private/tmp/marketplace-go-mod go build ./cmd/api
+	cd backend && GOCACHE=/private/tmp/marketplace-go-cache GOMODCACHE=/private/tmp/marketplace-go-path/pkg/mod go build ./cmd/api
 
 validate: lint test build
 
