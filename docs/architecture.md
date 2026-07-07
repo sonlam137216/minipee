@@ -18,9 +18,12 @@ Current API surface:
 - `GET /health`
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
+- `GET /api/v1/products`
+- `GET /api/v1/products/{productID}`
 - `POST /api/v1/seller/products`
 - `GET /api/v1/seller/products`
 - `GET /api/v1/seller/products/{productID}`
+- `POST /api/v1/seller/products/{productID}/publish`
 
 ## Backend Modules
 
@@ -32,10 +35,12 @@ Current API surface:
 - seller ID storage in request context;
 - `sellers` table persistence.
 
-`products` owns seller draft products:
+`products` owns seller products and public published catalog reads:
 
 - draft product creation rules;
+- draft-to-published transition rules;
 - product list and detail retrieval for the authenticated seller;
+- published product list and detail retrieval for public catalog users;
 - product validation;
 - `products` table persistence.
 
@@ -47,7 +52,7 @@ The frontend is a React and TypeScript Vite app under `frontend/`.
 
 - `frontend/src/app`: application shell, routes, and protected route behavior.
 - `frontend/src/features/auth`: seller login, registration, and browser auth state.
-- `frontend/src/features/products`: draft product list, create, and detail pages.
+- `frontend/src/features/products`: seller product list, create, detail, and public catalog pages.
 - `frontend/src/shared/api.ts`: API types, request helpers, and API error parsing.
 - `frontend/src/test`: Vitest and Testing Library setup.
 
@@ -72,7 +77,7 @@ Seller product routes are protected by `auth.RequireSeller`, which:
 - verifies the JWT using the configured secret;
 - stores the seller ID in request context.
 
-Product handlers read the seller ID from context. Product repository methods enforce ownership by including `seller_id` in seller product queries. Cross-seller draft product access returns not found.
+Product handlers read the seller ID from context. Product repository methods enforce ownership by including `seller_id` in seller product queries. Cross-seller seller product access and publish attempts return not found. Public product routes are unauthenticated and only return rows with status `published`.
 
 ## Current Request Flows
 
@@ -100,4 +105,17 @@ Seller product read:
 
 1. Frontend requests list or detail with a bearer token.
 2. Middleware establishes seller identity.
-3. Product repository queries by seller ID; detail lookup also requires status `draft`.
+3. Product repository queries by seller ID; detail lookup returns owned draft or published products.
+
+Product publish:
+
+1. Frontend posts to the publish endpoint with a bearer token.
+2. Middleware establishes seller identity.
+3. Product service loads the seller-owned product, rejects already published products, and publishes only draft rows.
+4. Product repository updates status to `published` and refreshes `updated_at`.
+
+Public catalog read:
+
+1. Frontend requests catalog list or detail without a bearer token.
+2. Product repository filters by `status = 'published'`.
+3. Public product responses omit seller ID and auth-owned fields.

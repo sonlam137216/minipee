@@ -12,6 +12,32 @@ const seller = {
   updatedAt: "2026-06-30T00:00:00Z"
 };
 
+const draftProduct = {
+  id: "00000000-0000-4000-8000-000000000101",
+  sellerId: seller.id,
+  name: "Draft product",
+  description: "Draft description",
+  status: "draft",
+  createdAt: "2026-06-30T00:00:00Z",
+  updatedAt: "2026-06-30T00:00:00Z"
+};
+
+const publishedSellerProduct = {
+  ...draftProduct,
+  name: "Published product",
+  status: "published",
+  updatedAt: "2026-06-30T00:05:00Z"
+};
+
+const publicProduct = {
+  id: publishedSellerProduct.id,
+  name: publishedSellerProduct.name,
+  description: publishedSellerProduct.description,
+  status: "published",
+  createdAt: publishedSellerProduct.createdAt,
+  updatedAt: publishedSellerProduct.updatedAt
+};
+
 describe("seller app", () => {
   beforeEach(() => {
     localStorage.clear();
@@ -189,5 +215,81 @@ describe("seller app", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Product name must contain between 3 and 200 characters");
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("seller can publish a draft product from the detail page", async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.mocked(fetch);
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(draftProduct), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(publishedSellerProduct), {
+          status: 200,
+          headers: { "Content-Type": "application/json" }
+        })
+      );
+    localStorage.setItem("marketplace.accessToken", "test-token");
+    localStorage.setItem("marketplace.seller", JSON.stringify(seller));
+    window.history.pushState({}, "", `/products/${draftProduct.id}`);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /draft product/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /publish product/i }));
+
+    await waitFor(() => expect(screen.getByText("published")).toBeInTheDocument());
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(url).toBe(`http://localhost:8080/api/v1/seller/products/${draftProduct.id}/publish`);
+    expect(init?.method).toBe("POST");
+    expect((init?.headers as Headers).get("Authorization")).toBe("Bearer test-token");
+  });
+
+  test("catalog lists public published products without requiring auth", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ products: [publicProduct] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    window.history.pushState({}, "", "/catalog");
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /catalog/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /published product/i })).toHaveAttribute(
+      "href",
+      `/catalog/${publicProduct.id}`
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8080/api/v1/products",
+      expect.objectContaining({ method: "GET" })
+    );
+    expect(screen.queryByText(/draft product/i)).not.toBeInTheDocument();
+  });
+
+  test("catalog detail shows a public published product", async () => {
+    const fetchMock = vi.mocked(fetch);
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify(publicProduct), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+    window.history.pushState({}, "", `/catalog/${publicProduct.id}`);
+
+    render(<App />);
+
+    expect(await screen.findByRole("heading", { name: /published product/i })).toBeInTheDocument();
+    expect(screen.getByText("Draft description")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      `http://localhost:8080/api/v1/products/${publicProduct.id}`,
+      expect.objectContaining({ method: "GET" })
+    );
   });
 });

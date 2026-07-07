@@ -34,7 +34,7 @@ Things it must not own:
 
 - Product storage or product business rules.
 - Seller product ownership queries.
-- Buyer accounts, orders, payments, inventory, shipping, product publishing, or storefront behavior.
+- Buyer accounts, orders, payments, inventory, shipping, or storefront behavior.
 
 Important business rules:
 
@@ -59,14 +59,16 @@ Responsibilities:
 - Create seller-owned draft products.
 - Validate draft product input.
 - List products for the authenticated seller.
-- Read one authenticated seller draft product by ID.
+- Read one authenticated seller product by ID.
+- Publish an authenticated seller's draft product.
+- List and read published products for the public catalog.
 - Persist product records through `products.PostgresRepository`.
 
 Data and concepts owned:
 
 - `products` table.
 - Product ID, seller ID, name, description, status, creation time, and update time.
-- Draft product status and product validation errors.
+- Draft and published product statuses and product validation errors.
 
 Interfaces or modules it may call:
 
@@ -79,7 +81,7 @@ Things it must not own:
 
 - Passwords, password hashes, JWT creation, JWT verification, or seller credential checks.
 - Seller account persistence except the `seller_id` foreign-key relationship already present on products.
-- Product publishing, buyer discovery, carts, orders, payments, inventory, shipping, or storefront behavior.
+- Carts, orders, payments, inventory, shipping, or full buyer storefront behavior.
 
 Important business rules:
 
@@ -87,12 +89,16 @@ Important business rules:
 - New products are always created with status `draft`.
 - Client-provided status cannot override draft creation.
 - Seller product list queries are scoped by authenticated seller ID.
-- Product detail lookup requires product ID, authenticated seller ID, and draft status.
-- Cross-seller draft product access returns not found.
+- Seller product detail lookup requires product ID and authenticated seller ID.
+- Publish requires product ID and authenticated seller ID, only changes draft products to `published`, and returns a conflict for already published products.
+- Cross-seller product access and publish attempts return not found.
+- Public catalog list and detail queries only return products with status `published`.
+- Public product responses must not include `sellerId`, seller email, password hashes, access tokens, JWT claims, or auth-owned fields.
 
 Authentication and authorization responsibilities:
 
-- Product routes are mounted behind `auth.RequireSeller`.
+- Seller product routes are mounted behind `auth.RequireSeller`.
+- Public catalog product routes are unauthenticated and filter to published rows.
 - Product handlers must obtain the seller ID from request context.
 - Product repository reads that expose seller-owned data must include `seller_id` in the SQL predicate.
 
@@ -139,8 +145,7 @@ Authentication and authorization responsibilities:
 
 The following domains are not implemented as current architecture:
 
-- Product publishing.
-- Buyer storefront or buyer product discovery.
+- Buyer accounts or buyer-owned storefront behavior.
 - Carts.
 - Orders.
 - Payments.

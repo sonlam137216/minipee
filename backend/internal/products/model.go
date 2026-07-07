@@ -7,12 +7,14 @@ import (
 )
 
 const (
-	StatusDraft = "draft"
+	StatusDraft     = "draft"
+	StatusPublished = "published"
 )
 
 var (
-	ErrInvalidProductName = errors.New("product name must contain between 3 and 200 characters")
-	ErrProductNotFound    = errors.New("product not found")
+	ErrInvalidProductName      = errors.New("product name must contain between 3 and 200 characters")
+	ErrProductNotFound         = errors.New("product not found")
+	ErrProductAlreadyPublished = errors.New("product is already published")
 )
 
 type Product struct {

@@ -38,9 +38,18 @@ This document separates implemented security controls from current MVP limitatio
 
 - Product creation uses the seller ID from request context.
 - Product list queries filter by `seller_id`.
-- Product detail queries require matching product ID, matching seller ID, and draft status.
+- Seller product detail queries require matching product ID and matching seller ID.
+- Product publish queries require matching product ID, matching seller ID, and draft status.
 - Cross-seller product detail access returns not found.
+- Cross-seller publish attempts return not found and leave the product unchanged.
 - Frontend state is not trusted for backend authorization.
+
+### Public Product Catalog Boundary
+
+- Public catalog routes are mounted outside `auth.RequireSeller`.
+- Public catalog list and detail queries filter by `status = 'published'`.
+- Draft products are not returned by public list or detail routes.
+- Public product responses exclude `sellerId`, seller email, password hashes, access tokens, JWT claims, and auth-owned fields.
 
 ### Secret Configuration
 
@@ -77,4 +86,5 @@ This document separates implemented security controls from current MVP limitatio
 - More advanced browser storage hardening is deferred.
 - There is no per-test database isolation beyond cleanup in current integration tests.
 - Migration version tracking is not implemented.
+- Product unpublish, moderation, and public seller profiles are not implemented.
 - Production-grade logging, rate limiting, CSRF strategy, and deployment secret management are not implemented.

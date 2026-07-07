@@ -51,11 +51,14 @@ func NewServer(ctx context.Context, cfg config.Config, logger *slog.Logger) (*Se
 	router.Route("/api/v1", func(r chi.Router) {
 		r.Post("/auth/register", authHandler.Register)
 		r.Post("/auth/login", authHandler.Login)
+		r.Get("/products", productHandler.PublicList)
+		r.Get("/products/{productID}", productHandler.PublicGet)
 		r.Group(func(protected chi.Router) {
 			protected.Use(auth.RequireSeller(jwtManager))
 			protected.Post("/seller/products", productHandler.Create)
 			protected.Get("/seller/products", productHandler.List)
 			protected.Get("/seller/products/{productID}", productHandler.Get)
+			protected.Post("/seller/products/{productID}/publish", productHandler.Publish)
 		})
 	})
 

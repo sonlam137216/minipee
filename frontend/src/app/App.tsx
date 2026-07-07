@@ -7,6 +7,8 @@ import { RegisterPage } from "../features/auth/RegisterPage";
 import { CreateProductPage } from "../features/products/CreateProductPage";
 import { ProductDetailPage } from "../features/products/ProductDetailPage";
 import { ProductListPage } from "../features/products/ProductListPage";
+import { PublicProductDetailPage } from "../features/products/PublicProductDetailPage";
+import { PublicProductListPage } from "../features/products/PublicProductListPage";
 
 export function App() {
   return (
@@ -24,9 +26,13 @@ export function AppShell() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <Link to="/products" className="brand">
-          Marketplace Seller
+        <Link to="/catalog" className="brand">
+          Marketplace
         </Link>
+        <nav aria-label="Catalog navigation">
+          <Link to="/catalog">Catalog</Link>
+          {auth.token === null ? <Link to="/login">Seller login</Link> : null}
+        </nav>
         {auth.token !== null ? (
           <nav aria-label="Seller navigation">
             <Link to="/products">Products</Link>
@@ -38,7 +44,9 @@ export function AppShell() {
         ) : null}
       </header>
       <Routes>
-        <Route path="/" element={<Navigate to="/products" replace />} />
+        <Route path="/" element={<Navigate to="/catalog" replace />} />
+        <Route path="/catalog" element={<PublicProductListPage />} />
+        <Route path="/catalog/:productID" element={<PublicProductDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route element={<ProtectedRoute />}>
